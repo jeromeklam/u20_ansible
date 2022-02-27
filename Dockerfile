@@ -1,4 +1,4 @@
-# Version 1.0.1
+# Version 1.0.2
 
 FROM jeromeklam/u20
 MAINTAINER Jérôme KLAM, "jeromeklam@free.fr"
@@ -6,13 +6,14 @@ MAINTAINER Jérôme KLAM, "jeromeklam@free.fr"
 #
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV pip_packages "ansible"
+ENV pip_packages "ansible molecule docker molecule-docker"
 
 # Install dependencies.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        apt-utils \
        build-essential \
+       curl \
        locales \
        libffi-dev \
        libssl-dev \
@@ -34,6 +35,8 @@ RUN locale-gen en_US.UTF-8
 # Install Ansible via Pip.
 RUN pip3 install $pip_packages
 
+RUN curl -sSL https://get.docker.com/ | sudo sh
+
 COPY docker/initctl_faker .
 RUN chmod +x initctl_faker && rm -fr /sbin/initctl && ln -s /initctl_faker /sbin/initctl
 
@@ -46,5 +49,9 @@ RUN echo "[local]\nlocalhost ansible_connection=local" > /etc/ansible/hosts
 RUN rm -f /lib/systemd/system/systemd*udev* \
   && rm -f /lib/systemd/system/getty.target
 
-VOLUME ["/sys/fs/cgroup", "/tmp", "/run", "/etc/ansible"]
+RUN mkdir -p /root/.ssh
+RUN chmod 700 /root/.ssh
+
+VOLUME ["/sys/fs/cgroup", "/tmp", "/run", "/etc/ansible", "/root/.ssh"]
+
 CMD ["/lib/systemd/systemd"]
